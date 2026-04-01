@@ -73,6 +73,98 @@
   }
   .subtitle { font-size:0.72rem; letter-spacing:0.35em; color:var(--text-dim); margin-bottom:40px; }
 
+  /* 4タイプ説明カード（表示のみ） */
+  .element-cards {
+    display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:8px;
+  }
+  .element-card {
+    padding:14px; border:1px solid; border-radius:2px;
+    text-align:center; position:relative; overflow:hidden;
+  }
+  .element-card.fire   { border-color:var(--fire-dim);  background:rgba(232,64,32,0.06); }
+  .element-card.water  { border-color:var(--water-dim); background:rgba(32,96,232,0.06); }
+  .element-card.earth  { border-color:var(--earth-dim); background:rgba(160,96,32,0.06); }
+  .element-card.wind   { border-color:var(--wind-dim);  background:rgba(192,176,32,0.06); }
+  .element-icon { font-size:1.8rem; margin-bottom:5px; }
+  .element-name { font-size:0.85rem; letter-spacing:0.12em; margin-bottom:4px; }
+  .element-name.fire  { color:var(--fire-bright); }
+  .element-name.water { color:var(--water-bright); }
+  .element-name.earth { color:var(--earth-bright); }
+  .element-name.wind  { color:var(--wind-bright); }
+  .element-keywords { font-size:0.6rem; color:var(--text-dim); letter-spacing:0.04em; line-height:1.8; }
+
+  .oracle-form {
+    position:relative; border:1px solid rgba(192,176,32,0.15);
+    padding:40px 32px; margin-bottom:32px; background:rgba(26,15,18,0.6);
+    backdrop-filter:blur(10px);
+  }
+  .corner { position:absolute; width:16px; height:16px; border-color:var(--wind-dim); border-style:solid; }
+  .corner.tl { top:-1px; left:-1px; border-width:1px 0 0 1px; }
+  .corner.tr { top:-1px; right:-1px; border-width:1px 1px 0 0; }
+  .corner.bl { bottom:-1px; left:-1px; border-width:0 0 1px 1px; }
+  .corner.br { bottom:-1px; right:-1px; border-width:0 1px 1px 0; }
+
+  .field { margin-bottom:20px; }
+  .field label { display:block; font-size:0.65rem; letter-spacing:0.15em; color:var(--text-dim); margin-bottom:6px; }
+  .field input, .field select, .field textarea {
+    width:100%; background:rgba(255,255,255,0.03);
+    border:1px solid rgba(192,176,32,0.15); border-radius:1px;
+    color:var(--text); padding:10px 14px; outline:none;
+    font-family:inherit; font-size:0.82rem; transition:border-color .3s;
+    box-sizing:border-box;
+  }
+  .field input:focus, .field textarea:focus { border-color:rgba(192,176,32,0.4); }
+  .field select option { background:#1a0f12; }
+
+  .invoke-btn {
+    width:100%; padding:16px; background:transparent;
+    border:1px solid rgba(192,176,32,0.4); color:var(--earth-bright);
+    font-family:inherit; font-size:0.8rem; letter-spacing:0.25em;
+    cursor:pointer; transition:all .4s; touch-action:manipulation;
+    box-sizing:border-box;
+  }
+  .invoke-btn:hover { background:rgba(192,176,32,0.08); border-color:rgba(192,176,32,0.7); }
+
+  .error-msg { display:none; margin-top:16px; padding:12px 16px; border:1px solid rgba(192,176,32,0.3); color:#c0b060; font-size:0.75rem; line-height:1.8; }
+  .error-msg.show { display:block; }
+
+  .loading-veil { display:none; text-align:center; padding:60px 0; }
+  .loading-veil.show { display:block; }
+  .orb {
+    width:60px; height:60px; margin:0 auto 24px; border-radius:50%;
+    background:radial-gradient(circle at 35% 35%,rgba(232,64,32,0.5),rgba(32,96,232,0.3),rgba(192,176,32,0.4));
+    box-shadow:0 0 40px rgba(192,176,32,0.3); animation:orb-spin 2s ease-in-out infinite;
+  }
+  @keyframes orb-spin { 0%,100%{transform:scale(1) rotate(0deg)} 50%{transform:scale(1.2) rotate(180deg)} }
+  .loading-text { font-size:0.7rem; letter-spacing:0.4em; color:var(--text-dim); animation:fade-text 1.5s ease-in-out infinite; }
+  @keyframes fade-text { 0%,100%{opacity:0.3} 50%{opacity:1} }
+
+  .result-scroll { display:none; margin-bottom:32px; border:1px solid rgba(192,176,32,0.2); padding:40px 32px; background:rgba(26,15,18,0.7); backdrop-filter:blur(10px); animation:fadeIn 0.8s ease; }
+  .result-scroll.show { display:block; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+  .result-header { text-align:center; margin-bottom:28px; }
+  .result-element-icon { font-size:4rem; margin-bottom:8px; animation:icon-pulse 2s ease-in-out infinite; }
+  @keyframes icon-pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
+  .result-element-name {
+    font-family:'Cormorant Garamond',serif; font-weight:300;
+    font-size:clamp(2rem,6vw,3.5rem); letter-spacing:0.2em; margin-bottom:8px;
+  }
+  .result-element-name.fire  { color:var(--fire-bright);  text-shadow:0 0 40px rgba(232,64,32,0.5); }
+  .result-element-name.water { color:var(--water-bright); text-shadow:0 0 40px rgba(32,96,232,0.5); }
+  .result-element-name.earth { color:var(--earth-bright); text-shadow:0 0 40px rgba(160,96,32,0.5); }
+  .result-element-name.wind  { color:var(--wind-bright);  text-shadow:0 0 40px rgba(192,176,32,0.5); }
+  .result-sub { font-size:0.7rem; letter-spacing:0.2em; color:var(--text-dim); }
+  .divider { text-align:center; margin:24px 0; font-size:0.7rem; letter-spacing:0.3em; color:var(--wind-dim); }
+  .fortune-text { font-size:0.88rem; line-height:2.2; letter-spacing:0.06em; color:var(--text); white-space:pre-wrap; }
+  .reset-btn {
+    display:block; margin:28px auto 0; padding:12px 40px;
+    background:transparent; border:1px solid rgba(192,176,32,0.25);
+    color:var(--text-dim); font-family:inherit; font-size:0.72rem;
+    letter-spacing:0.2em; cursor:pointer; transition:all .3s; touch-action:manipulation;
+  }
+  .reset-btn:hover { border-color:rgba(192,176,32,0.5); color:var(--text); }
+
   .apikey-wrap { margin-bottom:24px; }
   footer { text-align:center; padding:40px 0 60px; font-size:0.6rem; letter-spacing:0.2em; color:var(--text-dim); }
 </style>
@@ -154,7 +246,32 @@
       <textarea id="question" rows="3" style="resize:vertical"></textarea>
     </div>
 
-
+    <!-- 4タイプ説明（表示のみ） -->
+    <div class="field">
+      <label id="lElementInfo">四大元素タイプについて</label>
+      <div class="element-cards">
+        <div class="element-card fire">
+          <div class="element-icon">🔥</div>
+          <div class="element-name fire" id="fireName">火タイプ</div>
+          <div class="element-keywords" id="fireKw">情熱・行動力・リーダー<br>牡羊座・獅子座・射手座</div>
+        </div>
+        <div class="element-card water">
+          <div class="element-icon">💧</div>
+          <div class="element-name water" id="waterName">水タイプ</div>
+          <div class="element-keywords" id="waterKw">感受性・直感・共感力<br>蟹座・蠍座・魚座</div>
+        </div>
+        <div class="element-card earth">
+          <div class="element-icon">🌿</div>
+          <div class="element-name earth" id="earthName">土タイプ</div>
+          <div class="element-keywords" id="earthKw">安定・忍耐・現実的<br>牡牛座・乙女座・山羊座</div>
+        </div>
+        <div class="element-card wind">
+          <div class="element-icon">🌬</div>
+          <div class="element-name wind" id="windName">風タイプ</div>
+          <div class="element-keywords" id="windKw">知性・自由・社交性<br>双子座・天秤座・水瓶座</div>
+        </div>
+      </div>
+    </div>
     <button class="invoke-btn" id="invokeBtn"></button>
     <div class="error-msg" id="errorMsg"></div>
   </div>
@@ -228,7 +345,13 @@ const I18N = {
     lang:'ja', appTitle:'Element Layer', appSubtitle:'四大元素のタイプ診断',
     lApiKey:'⚡ Groq APIキー', lBirth:'生年月日',
     lLastName:'姓（任意）', lFirstName:'名（任意）',
-    lQuestion:'質問・悩み（任意）', waterName:'水タイプ', earthName:'土タイプ', windName:'風タイプ', waterKw:'感受性・直感・共感力', windKw:'知性・自由・社交性',
+    lQuestion:'質問・悩み（任意）',
+    lElementInfo:'四大元素タイプについて',
+    fireName:'火タイプ', waterName:'水タイプ', earthName:'土タイプ', windName:'風タイプ',
+    fireKw:'情熱・行動力・リーダー<br>牡羊座・獅子座・射手座',
+    waterKw:'感受性・直感・共感力<br>蟹座・蠍座・魚座',
+    earthKw:'安定・忍耐・現実的<br>牡牛座・乙女座・山羊座',
+    windKw:'知性・自由・社交性<br>双子座・天秤座・水瓶座', waterName:'水タイプ', earthName:'土タイプ', windName:'風タイプ', waterKw:'感受性・直感・共感力', windKw:'知性・自由・社交性',
     invokeBtn:'元素を読み解く',
     loadingText:'あなたの元素を読み解いています…',
     resetBtn:'もう一度診断する',
@@ -253,7 +376,13 @@ const I18N = {
     lang:'en', appTitle:'Element Layer', appSubtitle:'Four Elements Type Reading',
     lApiKey:'⚡ Groq API Key', lBirth:'Date of Birth',
     lLastName:'Last Name (opt.)', lFirstName:'First Name (opt.)',
-    lQuestion:'Your question (optional)', waterName:'Water Type', earthName:'Earth Type', windName:'Wind Type', waterKw:'Sensitivity · Intuition · Empathy', windKw:'Intelligence · Freedom · Social',
+    lQuestion:'Your question (optional)',
+    lElementInfo:'About the Four Element Types',
+    fireName:'Fire Type', waterName:'Water Type', earthName:'Earth Type', windName:'Wind Type',
+    fireKw:'Passion · Action · Leader<br>Aries · Leo · Sagittarius',
+    waterKw:'Sensitivity · Intuition · Empathy<br>Cancer · Scorpio · Pisces',
+    earthKw:'Stability · Patience · Practical<br>Taurus · Virgo · Capricorn',
+    windKw:'Intelligence · Freedom · Social<br>Gemini · Libra · Aquarius', waterName:'Water Type', earthName:'Earth Type', windName:'Wind Type', waterKw:'Sensitivity · Intuition · Empathy', windKw:'Intelligence · Freedom · Social',
     invokeBtn:'Read My Element',
     loadingText:'Reading your elemental nature…',
     resetBtn:'New Reading',
@@ -277,7 +406,13 @@ Based on birth date, zodiac sign, element type, and numerology, provide a detail
     lang:'zh', appTitle:'Element Layer', appSubtitle:'四大元素类型诊断',
     lApiKey:'⚡ Groq API 密钥', lBirth:'出生日期',
     lLastName:'姓（可选）', lFirstName:'名（可选）',
-    lQuestion:'问题或烦恼（可选）', waterName:'水型', earthName:'土型', windName:'风型', waterKw:'感受性·直觉·共情', windKw:'智慧·自由·社交',
+    lQuestion:'问题或烦恼（可选）',
+    lElementInfo:'四大元素类型说明',
+    fireName:'火型', waterName:'水型', earthName:'土型', windName:'风型',
+    fireKw:'热情·行动力·领导力<br>白羊·狮子·射手',
+    waterKw:'感受性·直觉·共情<br>巨蟹·天蝎·双鱼',
+    earthKw:'稳定·耐心·现实<br>金牛·处女·摩羯',
+    windKw:'智慧·自由·社交<br>双子·天秤·水瓶',
     invokeBtn:'解读元素', loadingText:'正在解读您的元素…',
     resetBtn:'重新诊断', footerText:'Element Layer — 四大元素类型诊断',
     toggleShow:'显示', toggleHide:'隐藏',
@@ -291,7 +426,13 @@ Based on birth date, zodiac sign, element type, and numerology, provide a detail
     lang:'ko', appTitle:'Element Layer', appSubtitle:'사대원소 타입 진단',
     lApiKey:'⚡ Groq API 키', lBirth:'생년월일',
     lLastName:'성（선택）', lFirstName:'이름（선택）',
-    lQuestion:'질문이나 고민（선택）', waterName:'물 타입', earthName:'흙 타입', windName:'바람 타입', waterKw:'감수성·직감·공감력', windKw:'지성·자유·사교성',
+    lQuestion:'질문이나 고민（선택）',
+    lElementInfo:'사대원소 타입 설명',
+    fireName:'불 타입', waterName:'물 타입', earthName:'흙 타입', windName:'바람 타입',
+    fireKw:'열정·행동력·리더십<br>양자리·사자자리·사수자리',
+    waterKw:'감수성·직감·공감력<br>게자리·전갈자리·물고기자리',
+    earthKw:'안정·인내·현실적<br>황소자리·처녀자리·염소자리',
+    windKw:'지성·자유·사교성<br>쌍둥이자리·천칭자리·물병자리',
     invokeBtn:'원소를 읽다', loadingText:'당신의 원소를 읽고 있습니다…',
     resetBtn:'다시 진단하기', footerText:'Element Layer — 사대원소 타입 진단',
     toggleShow:'표시', toggleHide:'숨기기',
@@ -305,7 +446,13 @@ Based on birth date, zodiac sign, element type, and numerology, provide a detail
     lang:'fr', appTitle:'Element Layer', appSubtitle:'Lecture des Quatre Éléments',
     lApiKey:'⚡ Clé API Groq', lBirth:'Date de naissance',
     lLastName:'Nom (opt.)', lFirstName:'Prénom (opt.)',
-    lQuestion:'Votre question (optionnel)', waterName:'Type Eau', earthName:'Type Terre', windName:'Type Vent', waterKw:'Sensibilité · Intuition · Empathie', windKw:'Intelligence · Liberté · Social',
+    lQuestion:'Votre question (optionnel)',
+    lElementInfo:'Les Quatre Types Élémentaires',
+    fireName:'Type Feu', waterName:'Type Eau', earthName:'Type Terre', windName:'Type Vent',
+    fireKw:'Passion · Action · Leadership<br>Bélier · Lion · Sagittaire',
+    waterKw:'Sensibilité · Intuition · Empathie<br>Cancer · Scorpion · Poissons',
+    earthKw:'Stabilité · Patience · Pratique<br>Taureau · Vierge · Capricorne',
+    windKw:'Intelligence · Liberté · Social<br>Gémeaux · Balance · Verseau',
     invokeBtn:'Lire mon Élément', loadingText:'Lecture de votre élément…',
     resetBtn:'Nouvelle Lecture', footerText:'Element Layer — Lecture des Quatre Éléments',
     toggleShow:'Afficher', toggleHide:'Masquer',
@@ -331,6 +478,15 @@ function setLang(lang) {
   document.getElementById('lLastName').textContent=t.lLastName;
   document.getElementById('lFirstName').textContent=t.lFirstName;
   document.getElementById('lQuestion').textContent=t.lQuestion;
+  document.getElementById('lElementInfo').textContent=t.lElementInfo;
+  document.getElementById('fireName').textContent=t.fireName;
+  document.getElementById('waterName').textContent=t.waterName;
+  document.getElementById('earthName').textContent=t.earthName;
+  document.getElementById('windName').textContent=t.windName;
+  document.getElementById('fireKw').innerHTML=t.fireKw;
+  document.getElementById('waterKw').innerHTML=t.waterKw;
+  document.getElementById('earthKw').innerHTML=t.earthKw;
+  document.getElementById('windKw').innerHTML=t.windKw;
   document.getElementById('invokeBtn').textContent=t.invokeBtn;
   document.getElementById('loadingText').textContent=t.loadingText;
   document.getElementById('resetBtn').textContent=t.resetBtn;
