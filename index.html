@@ -578,83 +578,179 @@ async function invokeElement(){
 }
 
 // ══════════════════════════════════════════
-// Background Canvas（4元素パーティクル）
+// Background Canvas（炎・波・大地・風）
 // ══════════════════════════════════════════
 (function(){
   const canvas=document.getElementById('bgCanvas');
   const ctx=canvas.getContext('2d');
   function resize(){canvas.width=window.innerWidth;canvas.height=window.innerHeight;}
-  resize(); window.addEventListener('resize',()=>{resize();initParticles();});
+  resize(); window.addEventListener('resize',()=>{resize();init();});
 
-  // 4元素のパーティクル
-  const ELEMENT_COLORS=['rgba(232,64,32','rgba(32,96,232','rgba(160,96,32','rgba(192,176,32'];
-  let particles=[];
-  function initParticles(){
-    particles=[];
-    for(let i=0;i<80;i++){
-      const ei=Math.floor(Math.random()*4);
-      particles.push({
-        x:Math.random()*canvas.width, y:Math.random()*canvas.height,
-        vx:(Math.random()-0.5)*0.4, vy:-(Math.random()*0.5+0.1),
-        size:Math.random()*3+0.5,
-        color:ELEMENT_COLORS[ei],
-        life:Math.random(), maxLife:Math.random()*200+80,
-        type:ei,
+  // ── 炎パーティクル（右上）
+  let flames=[];
+  function initFlames(){
+    flames=[];
+    const cx=canvas.width*0.82, cy=canvas.height*0.25;
+    for(let i=0;i<35;i++){
+      flames.push({
+        x:cx+(Math.random()-0.5)*60,
+        y:cy+Math.random()*30,
+        vx:(Math.random()-0.5)*0.8,
+        vy:-(Math.random()*1.5+0.8),
+        size:Math.random()*8+3,
+        life:Math.random(),
+        maxLife:Math.random()*60+30,
+        hue:Math.random()*30, // 赤〜オレンジ
       });
     }
   }
 
-  // 星
-  let stars=[];
-  function initStars(){
-    stars=[];
-    for(let i=0;i<200;i++){
-      const r=Math.random();
-      stars.push({
-        x:Math.random()*canvas.width, y:Math.random()*canvas.height,
-        radius:r<0.6?Math.random()*0.6+0.1:r<0.9?Math.random()*1.0+0.6:Math.random()*1.5+1.0,
-        baseAlpha:Math.random()*0.4+0.15,
-        twinkleSpeed:Math.random()*0.02+0.005, twinkleOffset:Math.random()*Math.PI*2,
-        color:r<0.2?'#f0d080':r<0.35?'#c8d8ff':'#ffffff',
+  // ── 波（左側）
+  const WAVES=[
+    {amp:18,freq:0.018,speed:0.022,y:0.35,alpha:0.18,color:'0,80,200'},
+    {amp:12,freq:0.025,speed:0.030,y:0.40,alpha:0.22,color:'20,100,220'},
+    {amp:8, freq:0.035,speed:0.040,y:0.44,alpha:0.25,color:'40,130,240'},
+  ];
+
+  // ── 大地パーティクル（下部）
+  let earths=[];
+  function initEarths(){
+    earths=[];
+    for(let i=0;i<25;i++){
+      earths.push({
+        x:Math.random()*canvas.width,
+        y:canvas.height*0.75+Math.random()*canvas.height*0.25,
+        size:Math.random()*4+2,
+        alpha:Math.random()*0.3+0.1,
+        twinkle:Math.random()*Math.PI*2,
+        speed:Math.random()*0.02+0.005,
       });
     }
   }
-  initParticles(); initStars();
+
+  // ── 風のライン（左上〜右下）
+  let windLines=[];
+  function initWind(){
+    windLines=[];
+    for(let i=0;i<20;i++){
+      windLines.push({
+        x:Math.random()*canvas.width,
+        y:Math.random()*canvas.height*0.6,
+        len:Math.random()*80+30,
+        vx:Math.random()*2+1,
+        vy:(Math.random()-0.5)*0.5,
+        alpha:Math.random()*0.2+0.05,
+        life:Math.random(),
+        maxLife:Math.random()*120+60,
+      });
+    }
+  }
+
+  function init(){ initFlames(); initEarths(); initWind(); }
+  init();
 
   let frame=0;
   function draw(){
-    ctx.fillStyle='rgba(10,6,8,0.18)'; ctx.fillRect(0,0,canvas.width,canvas.height);
+    // 背景（暗い）
+    ctx.fillStyle='rgba(10,6,8,0.22)';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
     if(frame===0){ctx.fillStyle='#0a0608';ctx.fillRect(0,0,canvas.width,canvas.height);}
 
-    // 星
-    stars.forEach(s=>{
-      const a=s.baseAlpha*(0.5+0.5*Math.sin(frame*s.twinkleSpeed+s.twinkleOffset));
-      ctx.globalAlpha=a; ctx.fillStyle=s.color;
-      ctx.beginPath(); ctx.arc(s.x,s.y,s.radius,0,Math.PI*2); ctx.fill();
+    // ── 炎（右上エリア）
+    flames.forEach(f=>{
+      f.x+=f.vx; f.y+=f.vy; f.life+=1/f.maxLife;
+      f.size*=0.98;
+      if(f.life>=1||f.size<0.5){
+        const cx=canvas.width*0.82;
+        const cy=canvas.height*0.25;
+        f.x=cx+(Math.random()-0.5)*60;
+        f.y=cy+Math.random()*30;
+        f.vx=(Math.random()-0.5)*0.8;
+        f.vy=-(Math.random()*1.5+0.8);
+        f.size=Math.random()*8+3;
+        f.life=0; f.maxLife=Math.random()*60+30;
+      }
+      const a=Math.sin(f.life*Math.PI)*0.6;
+      const r=255; const g=Math.floor(80+f.hue*4); const b=0;
+      const grd=ctx.createRadialGradient(f.x,f.y,0,f.x,f.y,f.size);
+      grd.addColorStop(0,`rgba(${r},${g},${b},${a})`);
+      grd.addColorStop(1,`rgba(${r},${Math.floor(g/2)},0,0)`);
+      ctx.globalAlpha=1;
+      ctx.fillStyle=grd;
+      ctx.beginPath(); ctx.arc(f.x,f.y,f.size,0,Math.PI*2); ctx.fill();
     });
 
-    // 元素パーティクル
-    particles.forEach(p=>{
-      p.x+=p.vx; p.y+=p.vy; p.life+=1/p.maxLife;
-      if(p.life>=1){ p.x=Math.random()*canvas.width; p.y=canvas.height+10; p.life=0; }
-      const a=Math.sin(p.life*Math.PI)*0.5;
-      ctx.globalAlpha=a;
-      // 元素によって形を変える
-      ctx.fillStyle=`${p.color},1)`;
+    // ── 波（左エリア）
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, canvas.height*0.28, canvas.width*0.5, canvas.height*0.25);
+    ctx.clip();
+    WAVES.forEach((w,wi)=>{
+      const baseY=canvas.height*w.y;
       ctx.beginPath();
-      if(p.type===0){ // 火：三角
-        ctx.moveTo(p.x,p.y-p.size); ctx.lineTo(p.x+p.size,p.y+p.size); ctx.lineTo(p.x-p.size,p.y+p.size);
-        ctx.closePath();
-      } else if(p.type===1){ // 水：丸
-        ctx.arc(p.x,p.y,p.size,0,Math.PI*2);
-      } else if(p.type===2){ // 土：四角
-        ctx.rect(p.x-p.size,p.y-p.size,p.size*2,p.size*2);
-      } else { // 風：ひし形
-        ctx.moveTo(p.x,p.y-p.size*1.2); ctx.lineTo(p.x+p.size,p.y); ctx.lineTo(p.x,p.y+p.size*1.2); ctx.lineTo(p.x-p.size,p.y);
-        ctx.closePath();
+      ctx.moveTo(0,canvas.height);
+      for(let x=0;x<=canvas.width*0.5+2;x+=2){
+        const y=baseY+Math.sin(x*w.freq+frame*w.speed)*w.amp
+          +Math.sin(x*w.freq*1.6+frame*w.speed*0.7+wi)*w.amp*0.4;
+        x===0?ctx.lineTo(0,y):ctx.lineTo(x,y);
       }
-      ctx.fill();
+      ctx.lineTo(canvas.width*0.5,canvas.height);
+      ctx.closePath();
+      const wGrd=ctx.createLinearGradient(0,baseY-w.amp,0,canvas.height);
+      wGrd.addColorStop(0,`rgba(${w.color},${w.alpha*0.5})`);
+      wGrd.addColorStop(0.3,`rgba(${w.color},${w.alpha})`);
+      wGrd.addColorStop(1,`rgba(${w.color},${w.alpha*1.8})`);
+      ctx.fillStyle=wGrd; ctx.fill();
+      // 波頭
+      ctx.beginPath();
+      for(let x=0;x<=canvas.width*0.5+2;x+=2){
+        const y=baseY+Math.sin(x*w.freq+frame*w.speed)*w.amp+Math.sin(x*w.freq*1.6+frame*w.speed*0.7+wi)*w.amp*0.4;
+        x===0?ctx.moveTo(0,y):ctx.lineTo(x,y);
+      }
+      ctx.strokeStyle=`rgba(${w.color},${w.alpha*0.6})`; ctx.lineWidth=1.2; ctx.stroke();
     });
+    ctx.restore();
+
+    // ── 大地（下部）
+    earths.forEach(e=>{
+      const a=e.alpha*(0.5+0.5*Math.sin(frame*e.speed+e.twinkle));
+      ctx.globalAlpha=a;
+      ctx.fillStyle='rgba(140,90,30,1)';
+      ctx.fillRect(e.x-e.size/2,e.y-e.size/2,e.size,e.size);
+    });
+    // 大地のライン
+    ctx.globalAlpha=0.08;
+    ctx.strokeStyle='rgba(160,96,32,1)'; ctx.lineWidth=1;
+    for(let i=0;i<3;i++){
+      const y=canvas.height*(0.78+i*0.06);
+      ctx.beginPath(); ctx.moveTo(0,y);
+      for(let x=0;x<=canvas.width;x+=20){
+        ctx.lineTo(x, y+Math.sin(x*0.02+frame*0.01+i)*6);
+      }
+      ctx.stroke();
+    }
+
+    // ── 風のライン
+    ctx.globalAlpha=1;
+    windLines.forEach(w=>{
+      w.x+=w.vx; w.y+=w.vy; w.life+=1/w.maxLife;
+      if(w.life>=1||w.x>canvas.width+100){
+        w.x=-w.len; w.y=Math.random()*canvas.height*0.6; w.life=0;
+        w.maxLife=Math.random()*120+60;
+      }
+      const a=Math.sin(w.life*Math.PI)*w.alpha;
+      ctx.globalAlpha=a;
+      ctx.strokeStyle='rgba(220,200,60,1)'; ctx.lineWidth=0.8;
+      ctx.beginPath();
+      ctx.moveTo(w.x,w.y);
+      ctx.bezierCurveTo(w.x+w.len*0.3,w.y-8,w.x+w.len*0.7,w.y+6,w.x+w.len,w.y);
+      ctx.stroke();
+      // 小さな渦
+      ctx.beginPath();
+      ctx.arc(w.x+w.len, w.y, 3, 0, Math.PI*1.5);
+      ctx.stroke();
+    });
+
     ctx.globalAlpha=1;
     frame++; requestAnimationFrame(draw);
   }
