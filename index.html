@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Element Layer</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Noto+Serif+JP:wght@200;300;400&display=swap" rel="stylesheet">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0a0608">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js');
+    });
+  }
+</script>
+<style>
+  :root {
+    --void: #0a0608; --deep: #120a0e; --ink: #1a0f12;
+    --fire: #e84020; --fire-dim: #802010; --fire-bright: #ff8060;
+    --water: #2060e8; --water-dim: #103080; --water-bright: #60a0ff;
+    --earth: #a06020; --earth-dim: #604010; --earth-bright: #d4a060;
+    --wind: #c0b020; --wind-dim: #706810; --wind-bright: #f0e060;
+    --text: #e8dcc0; --text-dim: #7a7060;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body {
+    background:var(--void); color:var(--text);
+    font-family:'Noto Serif JP',serif; font-weight:200;
+    min-height:100vh; overflow-x:hidden; cursor:crosshair;
+  }
+
+  #bgCanvas { position:fixed; inset:0; z-index:0; pointer-events:none; width:100%; height:100%; }
+
+  .lang-bar {
+    position:fixed; top:0; right:0; left:0; z-index:100;
+    display:flex; justify-content:center; align-items:center;
+    padding:8px 16px; gap:2px; flex-wrap:nowrap; overflow-x:auto;
+    background:linear-gradient(to bottom,rgba(10,6,8,0.95) 0%,transparent 100%);
+    scrollbar-width:none;
+  }
+  .lang-bar::-webkit-scrollbar { display:none; }
+  .lang-btn {
+    display:flex; align-items:center; gap:5px;
+    padding:10px 12px; background:transparent;
+    border:1px solid transparent; border-radius:2px;
+    color:var(--text-dim); font-family:inherit; font-size:0.68rem;
+    letter-spacing:0.04em; cursor:pointer; transition:all 0.25s; white-space:nowrap;
+    touch-action:manipulation; min-height:44px;
+  }
+  .lang-btn.active { color:var(--earth-bright); border-color:rgba(192,176,32,0.35); background:rgba(192,176,32,0.06); }
+
+  .wrap { position:relative; z-index:1; max-width:760px; margin:0 auto; padding:0 24px; }
+
+  header { text-align:center; padding:100px 0 50px; }
+  .element-sigil { width:90px; height:90px; margin:0 auto 28px; position:relative; }
+  .element-sigil svg { width:100%; height:100%; animation:sigil-spin 8s linear infinite; }
+  @keyframes sigil-spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
+  .element-sigil::after {
+    content:''; position:absolute; inset:-14px; border-radius:50%;
+    background:radial-gradient(circle,rgba(192,176,32,0.12) 0%,transparent 70%);
+    animation:pulse-glow 4s ease-in-out infinite;
+  }
+  @keyframes pulse-glow { 0%,100%{opacity:0.3;transform:scale(1)} 50%{opacity:0.8;transform:scale(1.1)} }
+
+  h1 {
+    font-family:'Cormorant Garamond',serif; font-weight:300;
+    font-size:clamp(2rem,5vw,3rem); letter-spacing:0.25em;
+    color:var(--earth-bright); margin-bottom:8px;
+    text-shadow:0 0 40px rgba(192,176,32,0.5);
+  }
+  .subtitle { font-size:0.72rem; letter-spacing:0.35em; color:var(--text-dim); margin-bottom:40px; }
+
+  /* 4タイプカード */
+  .element-cards {
+    display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:24px;
+  }
+  .element-card {
+    padding:16px; border:1px solid; border-radius:2px;
+    cursor:pointer; transition:all .3s; text-align:center;
+    touch-action:manipulation; position:relative; overflow:hidden;
+  }
+  .element-card::before {
+    content:''; position:absolute; inset:0; opacity:0.05;
+    transition:opacity .3s;
+  }
+  .element-card:hover::before, .element-card.active::before { opacity:0.12; }
+  .element-card.fire   { border-color:var(--fire-dim);  background:rgba(232,64,32,0.04); }
+  .element-card.water  { border-color:var(--water-dim); background:rgba(32,96,232,0.04); }
+  .element-card.earth  { border-color:var(--earth-dim); background:rgba(160,96,32,0.04); }
+  .element-card.wind   { border-color:var(--wind-dim);  background:rgba(192,176,32,0.04); }
+  .element-card.fire::before  { background:var(--fire); }
+  .element-card.water::before { background:var(--water); }
+  .element-card.earth::before { background:var(--earth); }
+  .element-card.wind::before  { background:var(--wind); }
+  .element-card.active.fire   { border-color:var(--fire);  box-shadow:0 0 20px rgba(232,64,32,0.3); }
+  .element-card.active.water  { border-color:var(--water); box-shadow:0 0 20px rgba(32,96,232,0.3); }
+  .element-card.active.earth  { border-color:var(--earth); box-shadow:0 0 20px rgba(160,96,32,0.3); }
+  .element-card.active.wind   { border-color:var(--wind);  box-shadow:0 0 20px rgba(192,176,32,0.3); }
+  .element-icon { font-size:2rem; margin-bottom:6px; }
+  .element-name { font-size:0.88rem; letter-spacing:0.15em; color:var(--text); margin-bottom:4px; }
+  .element-name.fire  { color:var(--fire-bright); }
+  .element-name.water { color:var(--water-bright); }
+  .element-name.earth { color:var(--earth-bright); }
+  .element-name.wind  { color:var(--wind-bright); }
+  .element-keywords { font-size:0.62rem; color:var(--text-dim); letter-spacing:0.05em; line-height:1.6; }
+
+  .oracle-form {
+    position:relative; border:1px solid rgba(192,176,32,0.15);
+    padding:40px 32px; margin-bottom:32px; background:rgba(26,15,18,0.6);
+    backdrop-filter:blur(10px);
+  }
+  .corner { position:absolute; width:16px; height:16px; border-color:var(--wind-dim); border-style:solid; }
+  .corner.tl { top:-1px; left:-1px; border-width:1px 0 0 1px; }
+  .corner.tr { top:-1px; right:-1px; border-width:1px 1px 0 0; }
+  .corner.bl { bottom:-1px; left:-1px; border-width:0 0 1px 1px; }
+  .corner.br { bottom:-1px; right:-1px; border-width:0 1px 1px 0; }
+
+  .field { margin-bottom:20px; }
+  .field label { display:block; font-size:0.65rem; letter-spacing:0.15em; color:var(--text-dim); margin-bottom:6px; }
+  .field input, .field select, .field textarea {
+    width:100%; background:rgba(255,255,255,0.03);
+    border:1px solid rgba(192,176,32,0.15); border-radius:1px;
+    color:var(--text); padding:10px 14px; outline:none;
+    font-family:inherit; font-size:0.82rem; transition:border-color .3s;
+  }
+  .field input:focus, .field textarea:focus { border-color:rgba(192,176,32,0.4); }
+  .field select option { background:#1a0f12; }
+
+  .invoke-btn {
+    width:100%; padding:16px; background:transparent;
+    border:1px solid rgba(192,176,32,0.4); color:var(--earth-bright);
+    font-family:inherit; font-size:0.8rem; letter-spacing:0.25em;
+    cursor:pointer; transition:all .4s; touch-action:manipulation;
+  }
+  .invoke-btn:hover { background:rgba(192,176,32,0.08); border-color:rgba(192,176,32,0.7); box-shadow:0 0 30px rgba(192,176,32,0.15); }
+
+  .error-msg { display:none; margin-top:16px; padding:12px 16px; border:1px solid rgba(192,176,32,0.3); color:#c0b060; font-size:0.75rem; letter-spacing:0.05em; line-height:1.8; }
+  .error-msg.show { display:block; }
+
+  .loading-veil { display:none; text-align:center; padding:60px 0; }
+  .loading-veil.show { display:block; }
+  .orb {
+    width:60px; height:60px; margin:0 auto 24px; border-radius:50%;
+    background:radial-gradient(circle at 35% 35%,rgba(232,64,32,0.5),rgba(32,96,232,0.3),rgba(192,176,32,0.4));
+    box-shadow:0 0 40px rgba(192,176,32,0.3); animation:orb-spin 2s ease-in-out infinite;
+  }
+  @keyframes orb-spin { 0%,100%{transform:scale(1) rotate(0deg)} 50%{transform:scale(1.2) rotate(180deg)} }
+  .loading-text { font-size:0.7rem; letter-spacing:0.4em; color:var(--text-dim); animation:fade-text 1.5s ease-in-out infinite; }
+  @keyframes fade-text { 0%,100%{opacity:0.3} 50%{opacity:1} }
+
+  .result-scroll { display:none; margin-bottom:32px; border:1px solid rgba(192,176,32,0.2); padding:40px 32px; background:rgba(26,15,18,0.7); backdrop-filter:blur(10px); animation:fadeIn 0.8s ease; }
+  .result-scroll.show { display:block; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+  .result-header { text-align:center; margin-bottom:28px; }
+  .result-element-icon { font-size:4rem; margin-bottom:8px; animation:icon-pulse 2s ease-in-out infinite; }
+  @keyframes icon-pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
+  .result-element-name {
+    font-family:'Cormorant Garamond',serif; font-weight:300;
+    font-size:clamp(2rem,6vw,3.5rem); letter-spacing:0.2em;
+    margin-bottom:8px;
+  }
+  .result-element-name.fire  { color:var(--fire-bright);  text-shadow:0 0 40px rgba(232,64,32,0.5); }
+  .result-element-name.water { color:var(--water-bright); text-shadow:0 0 40px rgba(32,96,232,0.5); }
+  .result-element-name.earth { color:var(--earth-bright); text-shadow:0 0 40px rgba(160,96,32,0.5); }
+  .result-element-name.wind  { color:var(--wind-bright);  text-shadow:0 0 40px rgba(192,176,32,0.5); }
+  .result-sub { font-size:0.7rem; letter-spacing:0.2em; color:var(--text-dim); }
+  .divider { text-align:center; margin:24px 0; font-size:0.7rem; letter-spacing:0.3em; color:var(--wind-dim); }
+  .fortune-text { font-size:0.88rem; line-height:2.2; letter-spacing:0.06em; color:var(--text); white-space:pre-wrap; }
+  .reset-btn {
+    display:block; margin:28px auto 0; padding:12px 40px;
+    background:transparent; border:1px solid rgba(192,176,32,0.25);
+    color:var(--text-dim); font-family:inherit; font-size:0.72rem;
+    letter-spacing:0.2em; cursor:pointer; transition:all .3s; touch-action:manipulation;
+  }
+  .reset-btn:hover { border-color:rgba(192,176,32,0.5); color:var(--text); }
+
+  .apikey-wrap { margin-bottom:24px; }
+  footer { text-align:center; padding:40px 0 60px; font-size:0.6rem; letter-spacing:0.2em; color:var(--text-dim); }
+</style>
+</head>
+<body>
+<canvas id="bgCanvas"></canvas>
+
+<div class="lang-bar">
+  <button class="lang-btn active" onclick="setLang('ja')" data-lang="ja">🇯🇵 日本語</button>
+  <button class="lang-btn" onclick="setLang('en')" data-lang="en">🇺🇸 English</button>
+  <button class="lang-btn" onclick="setLang('zh')" data-lang="zh">🇨🇳 中文</button>
+  <button class="lang-btn" onclick="setLang('ko')" data-lang="ko">🇰🇷 한국어</button>
+  <button class="lang-btn" onclick="setLang('fr')" data-lang="fr">🇫🇷 Français</button>
+</div>
+
+<div class="wrap">
+  <header>
+    <div class="element-sigil">
+      <svg viewBox="0 0 90 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="45" cy="45" r="42" stroke="#c0b020" stroke-width="0.5" opacity="0.6"/>
+        <circle cx="45" cy="45" r="30" stroke="#c0b020" stroke-width="0.3" opacity="0.4"/>
+        <!-- 火（上）-->
+        <path d="M45 15 L52 30 L45 26 L38 30Z" fill="rgba(232,64,32,0.5)" stroke="#e84020" stroke-width="0.8"/>
+        <!-- 水（右）-->
+        <path d="M75 45 L60 38 L64 45 L60 52Z" fill="rgba(32,96,232,0.5)" stroke="#2060e8" stroke-width="0.8"/>
+        <!-- 土（下）-->
+        <path d="M45 75 L38 60 L45 64 L52 60Z" fill="rgba(160,96,32,0.5)" stroke="#a06020" stroke-width="0.8"/>
+        <!-- 風（左）-->
+        <path d="M15 45 L30 52 L26 45 L30 38Z" fill="rgba(192,176,32,0.5)" stroke="#c0b020" stroke-width="0.8"/>
+        <!-- 中心円 -->
+        <circle cx="45" cy="45" r="8" fill="rgba(192,176,32,0.15)" stroke="#c0b020" stroke-width="0.8"/>
+        <circle cx="45" cy="45" r="3" fill="rgba(192,176,32,0.6)"/>
+        <!-- 対角線 -->
+        <line x1="22" y1="22" x2="68" y2="68" stroke="#c0b020" stroke-width="0.3" opacity="0.3"/>
+        <line x1="68" y1="22" x2="22" y2="68" stroke="#c0b020" stroke-width="0.3" opacity="0.3"/>
+      </svg>
+    </div>
+    <h1 id="appTitle">Element Layer</h1>
+    <p class="subtitle" id="appSubtitle">四大元素のタイプ診断</p>
+  </header>
+
+  <div class="oracle-form" id="formSection">
+    <div class="corner tl"></div><div class="corner tr"></div>
+    <div class="corner bl"></div><div class="corner br"></div>
+
+    <!-- APIキー -->
+    <div class="apikey-wrap">
+      <div class="field">
+        <label id="lApiKey">⚡ Groq APIキー</label>
+        <div style="display:flex;gap:8px;align-items:flex-start">
+          <textarea id="apiKey" rows="2" placeholder="gsk_..." style="flex:1;resize:vertical;font-family:monospace;font-size:0.78rem;-webkit-text-security:disc;text-security:disc"></textarea>
+          <button onclick="toggleApiKeyVisibility()" id="toggleBtn" style="padding:10px 14px;background:transparent;border:1px solid rgba(192,176,32,0.2);color:var(--text-dim);font-size:0.75rem;cursor:pointer;white-space:nowrap;transition:all .3s">表示</button>
+        </div>
+        <p id="apikeyNote" style="font-size:0.62rem;color:var(--text-dim);margin-top:6px;letter-spacing:0.05em;line-height:1.8">Groq Console（console.groq.com）に無料登録してAPIキーを取得。完全無料。クレジットカード不要。</p>
+      </div>
+    </div>
+
+    <!-- 生年月日 -->
+    <div class="field">
+      <label id="lBirth">生年月日</label>
+      <input type="date" id="birthdate">
+    </div>
+
+    <!-- 姓名 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+      <div class="field" style="margin-bottom:0">
+        <label id="lLastName">姓（任意）</label>
+        <input type="text" id="lastName">
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label id="lFirstName">名（任意）</label>
+        <input type="text" id="firstName">
+      </div>
+    </div>
+
+    <!-- 質問 -->
+    <div class="field">
+      <label id="lQuestion">質問・悩み（任意）</label>
+      <textarea id="question" rows="3" style="resize:vertical"></textarea>
+    </div>
+
+    <!-- 4タイプカード（興味があるタイプを選択） -->
+    <div class="field">
+      <label id="lElementSelect">気になるタイプを選んでください（任意）</label>
+      <div class="element-cards">
+        <div class="element-card fire" onclick="selectElement('fire')" id="cardFire">
+          <div class="element-icon">🔥</div>
+          <div class="element-name fire" id="fireName">火タイプ</div>
+          <div class="element-keywords" id="fireKw">情熱・行動力・リーダー</div>
+        </div>
+        <div class="element-card water" onclick="selectElement('water')" id="cardWater">
+          <div class="element-icon">💧</div>
+          <div class="element-name water" id="waterName">水タイプ</div>
+          <div class="element-keywords" id="waterKw">感受性・直感・共感力</div>
+        </div>
+        <div class="element-card earth" onclick="selectElement('earth')" id="cardEarth">
+          <div class="element-icon">🌿</div>
+          <div class="element-name earth" id="earthName">土タイプ</div>
+          <div class="element-keywords" id="earthKw">安定・忍耐・現実的</div>
+        </div>
+        <div class="element-card wind" onclick="selectElement('wind')" id="cardWind">
+          <div class="element-icon">🌬</div>
+          <div class="element-name wind" id="windName">風タイプ</div>
+          <div class="element-keywords" id="windKw">知性・自由・社交性</div>
+        </div>
+      </div>
+    </div>
+
+    <button class="invoke-btn" id="invokeBtn"></button>
+    <div class="error-msg" id="errorMsg"></div>
+  </div>
+
+  <div class="loading-veil" id="loadingVeil">
+    <div class="orb"></div>
+    <p class="loading-text" id="loadingText"></p>
+  </div>
+
+  <div class="result-scroll" id="resultScroll">
+    <div class="result-header">
+      <div class="result-element-icon" id="resultIcon"></div>
+      <div class="result-element-name" id="resultName"></div>
+      <div class="result-sub" id="resultSub"></div>
+    </div>
+    <div class="divider"><span>✦</span></div>
+    <div class="fortune-text" id="fortuneText"></div>
+    <button class="reset-btn" id="resetBtn" onclick="resetForm()"></button>
+  </div>
+
+  <footer><p id="footerText"></p></footer>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// 元素データ
+// ══════════════════════════════════════════
+const ELEMENTS = {
+  fire:  { icon:'🔥', ja:'火タイプ', en:'Fire Type', zh:'火型', ko:'불 타입', fr:'Type Feu',
+           zodiac:['牡羊座','獅子座','射手座'], color:'fire' },
+  water: { icon:'💧', ja:'水タイプ', en:'Water Type', zh:'水型', ko:'물 타입', fr:'Type Eau',
+           zodiac:['蟹座','蠍座','魚座'], color:'water' },
+  earth: { icon:'🌿', ja:'土タイプ', en:'Earth Type', zh:'土型', ko:'흙 타입', fr:'Type Terre',
+           zodiac:['牡牛座','乙女座','山羊座'], color:'earth' },
+  wind:  { icon:'🌬', ja:'風タイプ', en:'Wind Type', zh:'风型', ko:'바람 타입', fr:'Type Vent',
+           zodiac:['双子座','天秤座','水瓶座'], color:'wind' },
+};
+
+// 星座→元素のマッピング
+const ZODIAC_ELEMENT = {
+  '牡羊座':'fire','獅子座':'fire','射手座':'fire',
+  '蟹座':'water','蠍座':'water','魚座':'water',
+  '牡牛座':'earth','乙女座':'earth','山羊座':'earth',
+  '双子座':'wind','天秤座':'wind','水瓶座':'wind',
+};
+const ZODIAC_CUTS = [[1,20],[2,19],[3,21],[4,20],[5,21],[6,22],[7,23],[8,23],[9,23],[10,24],[11,23],[12,22]];
+const ZODIAC_JA = ['山羊座','水瓶座','魚座','牡羊座','牡牛座','双子座','蟹座','獅子座','乙女座','天秤座','蠍座','射手座'];
+
+function getZodiac(dateStr) {
+  const d=new Date(dateStr); const m=d.getMonth()+1; const day=d.getDate();
+  for(let i=0;i<ZODIAC_CUTS.length;i++){
+    const [cm,cd]=ZODIAC_CUTS[i];
+    if(m<cm||(m===cm&&day<cd)) return ZODIAC_JA[i];
+  }
+  return ZODIAC_JA[0];
+}
+function getElement(dateStr) {
+  return ZODIAC_ELEMENT[getZodiac(dateStr)] || 'fire';
+}
+function getLifeNum(dateStr) {
+  let s=dateStr.replace(/-/g,'').split('').map(Number).reduce((a,b)=>a+b,0);
+  while(s>9&&s!==11&&s!==22) s=String(s).split('').map(Number).reduce((a,b)=>a+b,0);
+  return s;
+}
+
+// ══════════════════════════════════════════
+// i18n
+// ══════════════════════════════════════════
+const I18N = {
+  ja: {
+    lang:'ja', appTitle:'Element Layer', appSubtitle:'四大元素のタイプ診断',
+    lApiKey:'⚡ Groq APIキー', lBirth:'生年月日',
+    lLastName:'姓（任意）', lFirstName:'名（任意）',
+    lQuestion:'質問・悩み（任意）',
+    lElementSelect:'気になるタイプを選んでください（任意）',
+    fireName:'火タイプ', waterName:'水タイプ', earthName:'土タイプ', windName:'風タイプ',
+    fireKw:'情熱・行動力・リーダー', waterKw:'感受性・直感・共感力',
+    earthKw:'安定・忍耐・現実的', windKw:'知性・自由・社交性',
+    invokeBtn:'元素を読み解く',
+    loadingText:'あなたの元素を読み解いています…',
+    resetBtn:'もう一度診断する',
+    footerText:'Element Layer — 四大元素のタイプ診断',
+    toggleShow:'表示', toggleHide:'隠す',
+    errApiKey:'Groq APIキーを入力してください',
+    errBirth:'生年月日を入力してください',
+    errAPI:'APIエラーが発生しました',
+    apikeyNote:'Groq Console（console.groq.com）に無料登録してAPIキーを取得。完全無料。クレジットカード不要。',
+    system:`あなたは四大元素（火・水・土・風）の占術師です。
+生年月日・星座・エレメントタイプ・数秘術をもとに、詳細で具体的なタイプ診断を日本語で行ってください。
+以下を含む診断文を600〜900文字で生成してください：
+- そのエレメントタイプの本質と特徴
+- 性格・才能・長所
+- 注意点・弱点とアドバイス
+- 恋愛・仕事・人間関係での傾向
+- 今後の指針とメッセージ`,
+    buildPrompt:(name, bd, zodiac, elem, lp, selElem, q) =>
+      `名前：${name||'（未入力）'}\n生年月日：${bd}\n星座：${zodiac}\nエレメント：${ELEMENTS[elem].ja}\n数秘：ライフパス${lp}\n${selElem?`気になるタイプ：${ELEMENTS[selElem].ja}\n`:''}${q?`質問：${q}\n`:''}今日：${new Date().toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'})}`
+  },
+  en: {
+    lang:'en', appTitle:'Element Layer', appSubtitle:'Four Elements Type Reading',
+    lApiKey:'⚡ Groq API Key', lBirth:'Date of Birth',
+    lLastName:'Last Name (opt.)', lFirstName:'First Name (opt.)',
+    lQuestion:'Your question (optional)',
+    lElementSelect:'Choose an element you resonate with (optional)',
+    fireName:'Fire Type', waterName:'Water Type', earthName:'Earth Type', windName:'Wind Type',
+    fireKw:'Passion · Action · Leadership', waterKw:'Sensitivity · Intuition · Empathy',
+    earthKw:'Stability · Patience · Practical', windKw:'Intelligence · Freedom · Social',
+    invokeBtn:'Read My Element',
+    loadingText:'Reading your elemental nature…',
+    resetBtn:'New Reading',
+    footerText:'Element Layer — Four Elements Type Reading',
+    toggleShow:'Show', toggleHide:'Hide',
+    errApiKey:'Please enter your Groq API key',
+    errBirth:'Please enter your date of birth',
+    errAPI:'API error occurred',
+    apikeyNote:'Get a free key at Groq Console (console.groq.com). Completely free. No credit card required.',
+    system:`You are an expert in the Four Elements divination system.
+Based on birth date, zodiac sign, element type, and numerology, provide a detailed type reading in English (600-900 words) including:
+- The essence and nature of this element type
+- Personality traits, talents, strengths
+- Weaknesses and advice
+- Tendencies in love, work, and relationships
+- Future guidance and message`,
+    buildPrompt:(name,bd,zodiac,elem,lp,selElem,q)=>
+      `Name: ${name||'(not given)'}\nBirth: ${bd}\nZodiac: ${zodiac}\nElement: ${ELEMENTS[elem].en}\nLife Path: ${lp}\n${selElem?`Resonates with: ${ELEMENTS[selElem].en}\n`:''}${q?`Question: ${q}\n`:''}Today: ${new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})}`
+  },
+  zh: {
+    lang:'zh', appTitle:'Element Layer', appSubtitle:'四大元素类型诊断',
+    lApiKey:'⚡ Groq API 密钥', lBirth:'出生日期',
+    lLastName:'姓（可选）', lFirstName:'名（可选）',
+    lQuestion:'问题或烦恼（可选）',
+    lElementSelect:'选择您感兴趣的类型（可选）',
+    fireName:'火型', waterName:'水型', earthName:'土型', windName:'风型',
+    fireKw:'热情·行动力·领导力', waterKw:'感受性·直觉·共情',
+    earthKw:'稳定·耐心·现实', windKw:'智慧·自由·社交',
+    invokeBtn:'解读元素', loadingText:'正在解读您的元素…',
+    resetBtn:'重新诊断', footerText:'Element Layer — 四大元素类型诊断',
+    toggleShow:'显示', toggleHide:'隐藏',
+    errApiKey:'请输入 Groq API 密钥', errBirth:'请输入出生日期', errAPI:'API 错误',
+    apikeyNote:'在 Groq Console（console.groq.com）免费注册。完全免费，无需信用卡。',
+    system:`你是四大元素占术师。根据生日、星座、元素类型和数秘术，用中文提供详细的类型诊断（600-900字），包括元素本质、性格才能、注意事项、恋爱工作倾向和未来指引。`,
+    buildPrompt:(name,bd,zodiac,elem,lp,selElem,q)=>
+      `姓名：${name||'（未输入）'}\n生日：${bd}\n星座：${zodiac}\n元素：${ELEMENTS[elem].zh}\n数秘：${lp}\n${selElem?`感兴趣：${ELEMENTS[selElem].zh}\n`:''}${q?`问题：${q}\n`:''}`
+  },
+  ko: {
+    lang:'ko', appTitle:'Element Layer', appSubtitle:'사대원소 타입 진단',
+    lApiKey:'⚡ Groq API 키', lBirth:'생년월일',
+    lLastName:'성（선택）', lFirstName:'이름（선택）',
+    lQuestion:'질문이나 고민（선택）',
+    lElementSelect:'끌리는 타입을 선택하세요（선택）',
+    fireName:'불 타입', waterName:'물 타입', earthName:'흙 타입', windName:'바람 타입',
+    fireKw:'열정·행동력·리더십', waterKw:'감수성·직감·공감력',
+    earthKw:'안정·인내·현실적', windKw:'지성·자유·사교성',
+    invokeBtn:'원소를 읽다', loadingText:'당신의 원소를 읽고 있습니다…',
+    resetBtn:'다시 진단하기', footerText:'Element Layer — 사대원소 타입 진단',
+    toggleShow:'표시', toggleHide:'숨기기',
+    errApiKey:'Groq API 키를 입력해 주세요', errBirth:'생년월일을 입력해 주세요', errAPI:'API 오류',
+    apikeyNote:'Groq Console(console.groq.com)에서 무료 가입. 완전 무료, 신용카드 불필요.',
+    system:`당신은 사대원소 점술사입니다. 생년월일, 별자리, 원소 타입, 수비술을 바탕으로 한국어로 상세한 타입 진단(600-900자)을 제공하세요.`,
+    buildPrompt:(name,bd,zodiac,elem,lp,selElem,q)=>
+      `이름：${name||'（미입력）'}\n생년월일：${bd}\n별자리：${zodiac}\n원소：${ELEMENTS[elem].ko}\n수비：${lp}\n${selElem?`관심원소：${ELEMENTS[selElem].ko}\n`:''}${q?`질문：${q}\n`:''}`
+  },
+  fr: {
+    lang:'fr', appTitle:'Element Layer', appSubtitle:'Lecture des Quatre Éléments',
+    lApiKey:'⚡ Clé API Groq', lBirth:'Date de naissance',
+    lLastName:'Nom (opt.)', lFirstName:'Prénom (opt.)',
+    lQuestion:'Votre question (optionnel)',
+    lElementSelect:"Choisissez l'élément qui vous attire (optionnel)",
+    fireName:'Type Feu', waterName:'Type Eau', earthName:'Type Terre', windName:'Type Vent',
+    fireKw:'Passion · Action · Leadership', waterKw:'Sensibilité · Intuition · Empathie',
+    earthKw:'Stabilité · Patience · Pratique', windKw:'Intelligence · Liberté · Social',
+    invokeBtn:'Lire mon Élément', loadingText:'Lecture de votre élément…',
+    resetBtn:'Nouvelle Lecture', footerText:'Element Layer — Lecture des Quatre Éléments',
+    toggleShow:'Afficher', toggleHide:'Masquer',
+    errApiKey:'Veuillez entrer votre clé API Groq', errBirth:'Veuillez entrer votre date de naissance', errAPI:'Erreur API',
+    apikeyNote:'Inscrivez-vous gratuitement sur Groq Console (console.groq.com). Entièrement gratuit, sans carte bancaire.',
+    system:`Vous êtes un expert en divination des Quatre Éléments. Basé sur la date de naissance, le signe du zodiaque, le type élémentaire et la numérologie, fournissez une lecture détaillée en français (600-900 mots).`,
+    buildPrompt:(name,bd,zodiac,elem,lp,selElem,q)=>
+      `Nom: ${name||'(non renseigné)'}\nNaissance: ${bd}\nZodiaque: ${zodiac}\nÉlément: ${ELEMENTS[elem].fr}\nChemin de vie: ${lp}\n${selElem?`Élément choisi: ${ELEMENTS[selElem].fr}\n`:''}${q?`Question: ${q}\n`:''}`
+  }
+};
+
+let currentLang='ja';
+let selectedElement=null;
+
+function setLang(lang) {
+  currentLang=lang;
+  const t=I18N[lang];
+  document.documentElement.lang=t.lang;
+  document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.dataset.lang===lang));
+  document.getElementById('appTitle').textContent=t.appTitle;
+  document.getElementById('appSubtitle').textContent=t.appSubtitle;
+  document.getElementById('lApiKey').textContent=t.lApiKey;
+  document.getElementById('lBirth').textContent=t.lBirth;
+  document.getElementById('lLastName').textContent=t.lLastName;
+  document.getElementById('lFirstName').textContent=t.lFirstName;
+  document.getElementById('lQuestion').textContent=t.lQuestion;
+  document.getElementById('lElementSelect').textContent=t.lElementSelect;
+  document.getElementById('fireName').textContent=t.fireName;
+  document.getElementById('waterName').textContent=t.waterName;
+  document.getElementById('earthName').textContent=t.earthName;
+  document.getElementById('windName').textContent=t.windName;
+  document.getElementById('fireKw').textContent=t.fireKw;
+  document.getElementById('waterKw').textContent=t.waterKw;
+  document.getElementById('earthKw').textContent=t.earthKw;
+  document.getElementById('windKw').textContent=t.windKw;
+  document.getElementById('invokeBtn').textContent=t.invokeBtn;
+  document.getElementById('loadingText').textContent=t.loadingText;
+  document.getElementById('resetBtn').textContent=t.resetBtn;
+  document.getElementById('footerText').textContent=t.footerText;
+  document.getElementById('apikeyNote').textContent=t.apikeyNote;
+  document.getElementById('toggleBtn').textContent=t.toggleShow;
+  document.title=t.appTitle;
+}
+
+function selectElement(elem) {
+  selectedElement = selectedElement===elem ? null : elem;
+  ['fire','water','earth','wind'].forEach(e=>{
+    document.getElementById('card'+e.charAt(0).toUpperCase()+e.slice(1))
+      .classList.toggle('active', selectedElement===e);
+  });
+}
+
+// ストレージ
+function storageSave(key,value){ try{localStorage.setItem(key,value);}catch(e){} try{const ex=new Date();ex.setFullYear(ex.getFullYear()+1);document.cookie=encodeURIComponent(key)+'='+encodeURIComponent(value)+'; expires='+ex.toUTCString()+'; path=/; SameSite=Lax';}catch(e){} }
+function storageLoad(key){ try{const v=localStorage.getItem(key);if(v!==null)return v;}catch(e){} try{const n=encodeURIComponent(key)+'=';for(let p of document.cookie.split(';')){p=p.trim();if(p.startsWith(n))return decodeURIComponent(p.substring(n.length));}}catch(e){} return null; }
+function saveData(){ const d={apiKey:document.getElementById('apiKey').value,birthdate:document.getElementById('birthdate').value,lastName:document.getElementById('lastName').value,firstName:document.getElementById('firstName').value,lang:currentLang};try{storageSave('elementlayer_data',JSON.stringify(d));}catch(e){} }
+function loadData(){ try{const raw=storageLoad('elementlayer_data');if(!raw)return;const d=JSON.parse(raw);if(d.apiKey)document.getElementById('apiKey').value=d.apiKey;if(d.birthdate)document.getElementById('birthdate').value=d.birthdate;if(d.lastName)document.getElementById('lastName').value=d.lastName;if(d.firstName)document.getElementById('firstName').value=d.firstName;if(d.lang)setLang(d.lang);}catch(e){} }
+
+function toggleApiKeyVisibility(){
+  const input=document.getElementById('apiKey');
+  const btn=document.getElementById('toggleBtn');
+  const t=I18N[currentLang];
+  const isHidden=input.style.webkitTextSecurity!=='none';
+  input.style.webkitTextSecurity=isHidden?'none':'disc';
+  input.style.textSecurity=isHidden?'none':'disc';
+  btn.textContent=isHidden?t.toggleHide:t.toggleShow;
+}
+function showError(msg){const el=document.getElementById('errorMsg');el.textContent=msg;el.className='error-msg show';}
+function resetForm(){
+  document.getElementById('resultScroll').className='result-scroll';
+  document.getElementById('formSection').style.display='block';
+  document.getElementById('errorMsg').className='error-msg';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+async function invokeElement(){
+  try{
+  const t=I18N[currentLang];
+  const apiKey=document.getElementById('apiKey').value.trim();
+  const bd=document.getElementById('birthdate').value;
+  const lastName=document.getElementById('lastName').value.trim();
+  const firstName=document.getElementById('firstName').value.trim();
+  const question=document.getElementById('question').value.trim();
+
+  document.getElementById('errorMsg').className='error-msg';
+  if(!apiKey){showError(t.errApiKey);return;}
+  if(!bd){showError(t.errBirth);return;}
+  try{saveData();}catch(e){}
+
+  const zodiac=getZodiac(bd);
+  const elem=getElement(bd);
+  const lp=getLifeNum(bd);
+  const name=(lastName+' '+firstName).trim();
+  const prompt=t.system+'\n\n'+t.buildPrompt(name,bd,zodiac,elem,lp,selectedElement,question);
+
+  document.getElementById('formSection').style.display='none';
+  document.getElementById('loadingVeil').className='loading-veil show';
+  document.getElementById('resultScroll').className='result-scroll';
+
+  const GROQ_MODELS=['llama-3.3-70b-versatile','llama3-70b-8192','gemma2-9b-it','llama3-8b-8192'];
+  let text='',ok=false,lastErr='';
+  for(const model of GROQ_MODELS){
+    try{
+      const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+        method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
+        body:JSON.stringify({model,max_tokens:1400,temperature:0.9,messages:[{role:'user',content:prompt}]})
+      });
+      const data=await res.json();
+      if(res.ok&&data.choices?.[0]?.message?.content){text=data.choices[0].message.content;ok=true;break;}
+      lastErr=`${model}: ${res.status} ${data?.error?.message||''}`;
+    }catch(e){lastErr=`${model}: ネットワークエラー`;}
+  }
+  if(!ok) throw new Error('GROQ_FAILED:'+lastErr);
+
+  const el=ELEMENTS[elem];
+  document.getElementById('loadingVeil').className='loading-veil';
+  document.getElementById('resultIcon').textContent=el.icon;
+  const nameEl=document.getElementById('resultName');
+  nameEl.textContent=el[currentLang==='ja'?'ja':currentLang==='zh'?'zh':currentLang==='ko'?'ko':currentLang==='fr'?'fr':'en'];
+  nameEl.className='result-element-name '+el.color;
+  document.getElementById('resultSub').textContent=`${zodiac} · Life Path ${lp}`;
+  document.getElementById('fortuneText').textContent=text;
+  document.getElementById('resultScroll').className='result-scroll show';
+  }catch(err){
+    document.getElementById('loadingVeil').className='loading-veil';
+    document.getElementById('formSection').style.display='block';
+    const msg=err.message||'';
+    if(msg.startsWith('GROQ_FAILED:')) showError('Groqエラー: '+msg.slice(12));
+    else showError(I18N[currentLang].errAPI+(msg?'（'+msg.slice(0,60)+'）':''));
+  }
+}
+
+// ══════════════════════════════════════════
+// Background Canvas（4元素パーティクル）
+// ══════════════════════════════════════════
+(function(){
+  const canvas=document.getElementById('bgCanvas');
+  const ctx=canvas.getContext('2d');
+  function resize(){canvas.width=window.innerWidth;canvas.height=window.innerHeight;}
+  resize(); window.addEventListener('resize',()=>{resize();initParticles();});
+
+  // 4元素のパーティクル
+  const ELEMENT_COLORS=['rgba(232,64,32','rgba(32,96,232','rgba(160,96,32','rgba(192,176,32'];
+  let particles=[];
+  function initParticles(){
+    particles=[];
+    for(let i=0;i<80;i++){
+      const ei=Math.floor(Math.random()*4);
+      particles.push({
+        x:Math.random()*canvas.width, y:Math.random()*canvas.height,
+        vx:(Math.random()-0.5)*0.4, vy:-(Math.random()*0.5+0.1),
+        size:Math.random()*3+0.5,
+        color:ELEMENT_COLORS[ei],
+        life:Math.random(), maxLife:Math.random()*200+80,
+        type:ei,
+      });
+    }
+  }
+
+  // 星
+  let stars=[];
+  function initStars(){
+    stars=[];
+    for(let i=0;i<200;i++){
+      const r=Math.random();
+      stars.push({
+        x:Math.random()*canvas.width, y:Math.random()*canvas.height,
+        radius:r<0.6?Math.random()*0.6+0.1:r<0.9?Math.random()*1.0+0.6:Math.random()*1.5+1.0,
+        baseAlpha:Math.random()*0.4+0.15,
+        twinkleSpeed:Math.random()*0.02+0.005, twinkleOffset:Math.random()*Math.PI*2,
+        color:r<0.2?'#f0d080':r<0.35?'#c8d8ff':'#ffffff',
+      });
+    }
+  }
+  initParticles(); initStars();
+
+  let frame=0;
+  function draw(){
+    ctx.fillStyle='rgba(10,6,8,0.18)'; ctx.fillRect(0,0,canvas.width,canvas.height);
+    if(frame===0){ctx.fillStyle='#0a0608';ctx.fillRect(0,0,canvas.width,canvas.height);}
+
+    // 星
+    stars.forEach(s=>{
+      const a=s.baseAlpha*(0.5+0.5*Math.sin(frame*s.twinkleSpeed+s.twinkleOffset));
+      ctx.globalAlpha=a; ctx.fillStyle=s.color;
+      ctx.beginPath(); ctx.arc(s.x,s.y,s.radius,0,Math.PI*2); ctx.fill();
+    });
+
+    // 元素パーティクル
+    particles.forEach(p=>{
+      p.x+=p.vx; p.y+=p.vy; p.life+=1/p.maxLife;
+      if(p.life>=1){ p.x=Math.random()*canvas.width; p.y=canvas.height+10; p.life=0; }
+      const a=Math.sin(p.life*Math.PI)*0.5;
+      ctx.globalAlpha=a;
+      // 元素によって形を変える
+      ctx.fillStyle=`${p.color},1)`;
+      ctx.beginPath();
+      if(p.type===0){ // 火：三角
+        ctx.moveTo(p.x,p.y-p.size); ctx.lineTo(p.x+p.size,p.y+p.size); ctx.lineTo(p.x-p.size,p.y+p.size);
+        ctx.closePath();
+      } else if(p.type===1){ // 水：丸
+        ctx.arc(p.x,p.y,p.size,0,Math.PI*2);
+      } else if(p.type===2){ // 土：四角
+        ctx.rect(p.x-p.size,p.y-p.size,p.size*2,p.size*2);
+      } else { // 風：ひし形
+        ctx.moveTo(p.x,p.y-p.size*1.2); ctx.lineTo(p.x+p.size,p.y); ctx.lineTo(p.x,p.y+p.size*1.2); ctx.lineTo(p.x-p.size,p.y);
+        ctx.closePath();
+      }
+      ctx.fill();
+    });
+    ctx.globalAlpha=1;
+    frame++; requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// タッチイベント
+document.querySelectorAll('.lang-btn').forEach(btn=>{
+  btn.addEventListener('touchend',function(e){e.preventDefault();setLang(this.dataset.lang);},{passive:false});
+});
+['fire','water','earth','wind'].forEach(e=>{
+  document.getElementById('card'+e.charAt(0).toUpperCase()+e.slice(1)).addEventListener('touchend',function(ev){ev.preventDefault();selectElement(e);},{passive:false});
+});
+
+document.addEventListener('DOMContentLoaded',function(){
+  const btn=document.getElementById('invokeBtn');
+  if(btn)btn.addEventListener('click',function(e){e.preventDefault();invokeElement();});
+});
+
+setLang('ja');
+loadData();
+</script>
+</body>
+</html>
