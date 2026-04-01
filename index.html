@@ -210,6 +210,33 @@
     <div class="corner tl"></div><div class="corner tr"></div>
     <div class="corner bl"></div><div class="corner br"></div>
 
+    <!-- 4タイプ説明（表示のみ） -->
+    <div class="field">
+      <label id="lElementInfo">四大元素タイプについて</label>
+      <div class="element-cards">
+        <div class="element-card fire">
+          <div class="element-icon">🔥</div>
+          <div class="element-name fire" id="fireName">火タイプ</div>
+          <div class="element-keywords" id="fireKw">情熱・行動力・リーダー<br>牡羊座・獅子座・射手座</div>
+        </div>
+        <div class="element-card water">
+          <div class="element-icon">💧</div>
+          <div class="element-name water" id="waterName">水タイプ</div>
+          <div class="element-keywords" id="waterKw">感受性・直感・共感力<br>蟹座・蠍座・魚座</div>
+        </div>
+        <div class="element-card earth">
+          <div class="element-icon">🌿</div>
+          <div class="element-name earth" id="earthName">土タイプ</div>
+          <div class="element-keywords" id="earthKw">安定・忍耐・現実的<br>牡牛座・乙女座・山羊座</div>
+        </div>
+        <div class="element-card wind">
+          <div class="element-icon">🌬</div>
+          <div class="element-name wind" id="windName">風タイプ</div>
+          <div class="element-keywords" id="windKw">知性・自由・社交性<br>双子座・天秤座・水瓶座</div>
+        </div>
+      </div>
+    </div>
+
     <!-- APIキー -->
     <div class="apikey-wrap">
       <div class="field">
@@ -246,32 +273,6 @@
       <textarea id="question" rows="3" style="resize:vertical"></textarea>
     </div>
 
-    <!-- 4タイプ説明（表示のみ） -->
-    <div class="field">
-      <label id="lElementInfo">四大元素タイプについて</label>
-      <div class="element-cards">
-        <div class="element-card fire">
-          <div class="element-icon">🔥</div>
-          <div class="element-name fire" id="fireName">火タイプ</div>
-          <div class="element-keywords" id="fireKw">情熱・行動力・リーダー<br>牡羊座・獅子座・射手座</div>
-        </div>
-        <div class="element-card water">
-          <div class="element-icon">💧</div>
-          <div class="element-name water" id="waterName">水タイプ</div>
-          <div class="element-keywords" id="waterKw">感受性・直感・共感力<br>蟹座・蠍座・魚座</div>
-        </div>
-        <div class="element-card earth">
-          <div class="element-icon">🌿</div>
-          <div class="element-name earth" id="earthName">土タイプ</div>
-          <div class="element-keywords" id="earthKw">安定・忍耐・現実的<br>牡牛座・乙女座・山羊座</div>
-        </div>
-        <div class="element-card wind">
-          <div class="element-icon">🌬</div>
-          <div class="element-name wind" id="windName">風タイプ</div>
-          <div class="element-keywords" id="windKw">知性・自由・社交性<br>双子座・天秤座・水瓶座</div>
-        </div>
-      </div>
-    </div>
     <button class="invoke-btn" id="invokeBtn"></button>
     <div class="error-msg" id="errorMsg"></div>
   </div>
