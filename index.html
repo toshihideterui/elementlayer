@@ -239,14 +239,23 @@
 
     <!-- APIキー -->
     <div class="apikey-wrap">
-      <div class="field">
-        <label id="lApiKey">⚡ Groq APIキー</label>
-        <div style="display:flex;gap:8px;align-items:flex-start">
-          <textarea id="apiKey" rows="2" placeholder="gsk_..." style="flex:1;resize:vertical;font-family:monospace;font-size:0.78rem;-webkit-text-security:disc;text-security:disc"></textarea>
-          <button onclick="toggleApiKeyVisibility()" id="toggleBtn" style="padding:10px 14px;background:transparent;border:1px solid rgba(192,176,32,0.2);color:var(--text-dim);font-size:0.75rem;cursor:pointer;white-space:nowrap;transition:all .3s">表示</button>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="field" style="margin-bottom:0">
+          <label id="lGemmaKey">🔵 Gemma APIキー</label>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input type="password" id="gemmaKey" placeholder="AIza..." style="flex:1;font-family:monospace;font-size:0.72rem;">
+            <button onclick="toggleGemmaKey()" id="toggleGemmaBtn" style="padding:8px 10px;background:transparent;border:1px solid rgba(192,176,32,0.2);color:var(--text-dim);font-size:0.65rem;cursor:pointer;white-space:nowrap;transition:all .3s">表示</button>
+          </div>
         </div>
-        <p id="apikeyNote" style="font-size:0.62rem;color:var(--text-dim);margin-top:6px;letter-spacing:0.05em;line-height:1.8">Groq Console（console.groq.com）に無料登録してAPIキーを取得。完全無料。クレジットカード不要。</p>
+        <div class="field" style="margin-bottom:0">
+          <label id="lApiKey">⚡ Groq APIキー</label>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input type="password" id="apiKey" placeholder="gsk_..." style="flex:1;font-family:monospace;font-size:0.72rem;">
+            <button onclick="toggleApiKeyVisibility()" id="toggleBtn" style="padding:8px 10px;background:transparent;border:1px solid rgba(192,176,32,0.2);color:var(--text-dim);font-size:0.65rem;cursor:pointer;white-space:nowrap;transition:all .3s">表示</button>
+          </div>
+        </div>
       </div>
+      <p id="apikeyNote" style="font-size:0.62rem;color:var(--text-dim);margin-top:6px;letter-spacing:0.05em;line-height:1.8">どちらか一方のAPIキーがあれば動作します。両方入力するとGemmaを優先します。</p>
     </div>
 
     <!-- 生年月日 -->
@@ -501,17 +510,22 @@ function setLang(lang) {
 // ストレージ
 function storageSave(key,value){ try{localStorage.setItem(key,value);}catch(e){} try{const ex=new Date();ex.setFullYear(ex.getFullYear()+1);document.cookie=encodeURIComponent(key)+'='+encodeURIComponent(value)+'; expires='+ex.toUTCString()+'; path=/; SameSite=Lax';}catch(e){} }
 function storageLoad(key){ try{const v=localStorage.getItem(key);if(v!==null)return v;}catch(e){} try{const n=encodeURIComponent(key)+'=';for(let p of document.cookie.split(';')){p=p.trim();if(p.startsWith(n))return decodeURIComponent(p.substring(n.length));}}catch(e){} return null; }
-function saveData(){ const d={apiKey:document.getElementById('apiKey').value,birthdate:document.getElementById('birthdate').value,lastName:document.getElementById('lastName').value,firstName:document.getElementById('firstName').value,lang:currentLang};try{storageSave('elementlayer_data',JSON.stringify(d));}catch(e){} }
-function loadData(){ try{const raw=storageLoad('elementlayer_data');if(!raw)return;const d=JSON.parse(raw);if(d.apiKey)document.getElementById('apiKey').value=d.apiKey;if(d.birthdate)document.getElementById('birthdate').value=d.birthdate;if(d.lastName)document.getElementById('lastName').value=d.lastName;if(d.firstName)document.getElementById('firstName').value=d.firstName;if(d.lang)setLang(d.lang);}catch(e){} }
+function saveData(){ const d={apiKey:document.getElementById('apiKey').value,gemmaKey:document.getElementById('gemmaKey').value,birthdate:document.getElementById('birthdate').value,lastName:document.getElementById('lastName').value,firstName:document.getElementById('firstName').value,lang:currentLang};try{storageSave('elementlayer_data',JSON.stringify(d));}catch(e){} }
+function loadData(){ try{const raw=storageLoad('elementlayer_data');if(!raw)return;const d=JSON.parse(raw);if(d.apiKey)document.getElementById('apiKey').value=d.apiKey;if(d.gemmaKey)document.getElementById('gemmaKey').value=d.gemmaKey;if(d.birthdate)document.getElementById('birthdate').value=d.birthdate;if(d.lastName)document.getElementById('lastName').value=d.lastName;if(d.firstName)document.getElementById('firstName').value=d.firstName;if(d.lang)setLang(d.lang);}catch(e){} }
 
 function toggleApiKeyVisibility(){
   const input=document.getElementById('apiKey');
   const btn=document.getElementById('toggleBtn');
-  const t=I18N[currentLang];
-  const isHidden=input.style.webkitTextSecurity!=='none';
-  input.style.webkitTextSecurity=isHidden?'none':'disc';
-  input.style.textSecurity=isHidden?'none':'disc';
-  btn.textContent=isHidden?t.toggleHide:t.toggleShow;
+  const isPassword=input.type==='password';
+  input.type=isPassword?'text':'password';
+  btn.textContent=isPassword?'隠す':'表示';
+}
+function toggleGemmaKey(){
+  const input=document.getElementById('gemmaKey');
+  const btn=document.getElementById('toggleGemmaBtn');
+  const isPassword=input.type==='password';
+  input.type=isPassword?'text':'password';
+  btn.textContent=isPassword?'隠す':'表示';
 }
 function showError(msg){const el=document.getElementById('errorMsg');el.textContent=msg;el.className='error-msg show';}
 function resetForm(){
@@ -521,17 +535,52 @@ function resetForm(){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
+// 共通AI呼び出し（Gemma優先・Groqフォールバック）
+async function callAI(prompt){
+  const gemmaKey=document.getElementById('gemmaKey').value.trim();
+  const groqKey=document.getElementById('apiKey').value.trim();
+
+  if(gemmaKey){
+    try{
+      const res=await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemma-3-27b-it:generateContent?key=${gemmaKey}`,
+        {method:'POST',headers:{'Content-Type':'application/json'},
+         body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:1400,temperature:0.9}})}
+      );
+      const data=await res.json();
+      const text=data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if(res.ok&&text) return text;
+    }catch(e){}
+  }
+
+  if(groqKey){
+    const MODELS=['llama-3.3-70b-versatile','llama3-70b-8192','gemma2-9b-it'];
+    for(const model of MODELS){
+      try{
+        const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+          method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+groqKey},
+          body:JSON.stringify({model,max_tokens:1400,temperature:0.9,messages:[{role:'user',content:prompt}]})
+        });
+        const data=await res.json();
+        if(res.ok&&data.choices?.[0]?.message?.content) return data.choices[0].message.content;
+      }catch(e){continue;}
+    }
+  }
+  throw new Error('APIキーを入力してください');
+}
+
 async function invokeElement(){
   try{
   const t=I18N[currentLang];
-  const apiKey=document.getElementById('apiKey').value.trim();
+  const gemmaKey=document.getElementById('gemmaKey').value.trim();
+  const groqKey=document.getElementById('apiKey').value.trim();
   const bd=document.getElementById('birthdate').value;
   const lastName=document.getElementById('lastName').value.trim();
   const firstName=document.getElementById('firstName').value.trim();
   const question=document.getElementById('question').value.trim();
 
   document.getElementById('errorMsg').className='error-msg';
-  if(!apiKey){showError(t.errApiKey);return;}
+  if(!gemmaKey&&!groqKey){showError(t.errApiKey);return;}
   if(!bd){showError(t.errBirth);return;}
   try{saveData();}catch(e){}
 
@@ -545,20 +594,7 @@ async function invokeElement(){
   document.getElementById('loadingVeil').className='loading-veil show';
   document.getElementById('resultScroll').className='result-scroll';
 
-  const GROQ_MODELS=['llama-3.3-70b-versatile','llama3-70b-8192','gemma2-9b-it','llama3-8b-8192'];
-  let text='',ok=false,lastErr='';
-  for(const model of GROQ_MODELS){
-    try{
-      const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
-        method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
-        body:JSON.stringify({model,max_tokens:1400,temperature:0.9,messages:[{role:'user',content:prompt}]})
-      });
-      const data=await res.json();
-      if(res.ok&&data.choices?.[0]?.message?.content){text=data.choices[0].message.content;ok=true;break;}
-      lastErr=`${model}: ${res.status} ${data?.error?.message||''}`;
-    }catch(e){lastErr=`${model}: ネットワークエラー`;}
-  }
-  if(!ok) throw new Error('GROQ_FAILED:'+lastErr);
+  const text=await callAI(prompt);
 
   const el=ELEMENTS[elem];
   document.getElementById('loadingVeil').className='loading-veil';
